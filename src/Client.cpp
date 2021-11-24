@@ -2,29 +2,13 @@
 #include <zmq.hpp>
 #include <iostream>
 #include <fstream>
-#include <openssl/md5.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <fcntl.h>
 #include <algorithm>
-#include "data.h"
 // #include "zhelpers.hpp"
 
-std::array<unsigned char, MD5_DIGEST_LENGTH> fileHash(const std::string filename, size_t fileSize) {
-    std::array<unsigned char, MD5_DIGEST_LENGTH> result;
-
-    void* fileBuffer = mmap(0, fileSize, PROT_READ, MAP_SHARED, open(filename.c_str(), O_RDONLY), 0);
-    MD5((unsigned char*) fileBuffer, fileSize, result.data());
-    munmap(fileBuffer, fileSize);
-
-    return result;
-}
-
-void Client::upload(const std::string endpoint, const std::string filename) {
+void Client::upload(const std::string endpoint, const std::string filename, size_t fileSize, const std::array<unsigned char, MD5_DIGEST_LENGTH>& hash) {
     poison = false;
     progress = 0;
-    clientThread = new std::thread(&Client::run, this, endpoint, filename);
+    clientThread = new std::thread(&Client::run, this, endpoint, filename, fileSize, hash);
 }
 
 void Client::cancel() {
@@ -34,22 +18,14 @@ void Client::cancel() {
     delete clientThread;
 }
 
-void Client::run(const std::string endpoint, const std::string filename) {
+void Client::run(const std::string endpoint, const std::string filename, size_t fileSize, const std::array<unsigned char, MD5_DIGEST_LENGTH>& hash) {
 
     zmq::socket_t socket(context, zmq::socket_type::dealer);
 
     socket.connect(endpoint);
 
-    // Get file size.
-    std::ifstream file(filename, std::ios::binary | std::ios::ate);
-    size_t fileSize = file.tellg();
-
     // Open file.
-    file = std::ifstream(filename, std::ios::binary);
-
-    // Hash the file for testing data integrity.
-    std::array<unsigned char, MD5_DIGEST_LENGTH> hash = fileHash(filename, fileSize);
-    // std::array<unsigned char, MD5_DIGEST_LENGTH> hash;
+    std::ifstream file(filename, std::ios::binary);
 
     // Send file hash to start transfer.
     zmq::const_buffer hashFrame(hash.data(), MD5_DIGEST_LENGTH);
@@ -78,4 +54,6 @@ void Client::run(const std::string endpoint, const std::string filename) {
             break;
         }
     }
+
+    progress = 100;
 }

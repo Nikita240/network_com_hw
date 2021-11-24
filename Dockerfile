@@ -18,11 +18,8 @@ RUN pip3 install meson conan
 COPY . .
 
 RUN --mount=type=cache,target=build \
-    conan install . --install-folder build -g deploy
-
-RUN --mount=type=cache,target=build \
-    conan build . --build-folder build \
-    && mkdir bin \
+    conan install . --install-folder build -g deploy \
+    && conan build . --build-folder build \
     && cp -R build build_out
 
 # ******************************************************************************
@@ -35,4 +32,5 @@ WORKDIR /opt/transfer
 COPY --from=builder /opt/transfer/build_out/*/lib/* /usr/lib
 
 # Copy our binaries
-COPY --from=builder /opt/transfer/build_out/server /usr/bin
+COPY --from=builder /opt/transfer/build_out/build/server /usr/bin
+COPY --from=builder /opt/transfer/build_out/build/client /usr/bin

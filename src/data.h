@@ -1,6 +1,8 @@
 #ifndef FAEE5A3C_1C6D_4094_A933_DCEAB13CDEC3
 #define FAEE5A3C_1C6D_4094_A933_DCEAB13CDEC3
 
+#include <openssl/md5.h>
+
 #define CHUNK_SIZE 25000
 #define BANDWIDTH 10
 

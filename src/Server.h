@@ -7,7 +7,7 @@
 #include <atomic>
 #include <map>
 #include <fstream>
-#include <openssl/md5.h>
+#include "data.h"
 
 // Specialization to allow us to use client ID packets as a map key.
 namespace std

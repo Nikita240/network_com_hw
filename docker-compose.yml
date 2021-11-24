@@ -13,11 +13,9 @@ services:
       context: .
     depends_on:
       - "server"
-    # volumes:
-    #   - files:/opt/transfer/files
-    # Pass stdin through to the executable.
-    stdin_open: true
-    tty: true
-    # Make tini be PID 1 to force Ctrl-C to kill underlying proccess.
-    init: true
-    command: client
+    volumes:
+      - ./files:/opt/transfer/files
+    # # Pass stdin through to the executable.
+    # stdin_open: true
+    # tty: true
+    command: client "tcp://server:5557" files/cad_mesh.stl

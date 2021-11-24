@@ -16,6 +16,13 @@ void inthand(int signum) {
 
 int main(int argc, char **argv) {
 
+    if(argc < 2) {
+        std::cout << "Please enter a connection endpoint and try again." << std::endl;
+        std::cout << "Example: server \"tcp://*:5557\"" << std::endl;
+
+        return 1;
+    }
+
     Server server(context);
     server.start(argv[1]);
 

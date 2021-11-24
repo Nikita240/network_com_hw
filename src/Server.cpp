@@ -2,10 +2,12 @@
 #include <zmq.hpp>
 #include <iostream>
 #include <chrono>
-#include "data.h"
+#include <sys/stat.h>
 // #include "zhelpers.hpp"
 
 void Server::start(const std::string endpoint) {
+    mkdir("files", 0777);
+
     poison = false;
     serverThread = new std::thread(&Server::run, this, endpoint);
 }
