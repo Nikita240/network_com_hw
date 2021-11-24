@@ -11,21 +11,19 @@ RUN apt update && DEBIAN_FRONTEND="noninteractive" apt install --no-install-reco
     python3-setuptools \
     python3-wheel \
     ninja-build \
-    pkg-config \
-    cmake \
-    libzmqpp-dev
+    pkg-config
 
 RUN pip3 install meson conan
 
 COPY . .
 
-RUN conan install .
+RUN --mount=type=cache,target=build \
+    conan install . --install-folder build -g deploy
 
 RUN --mount=type=cache,target=build \
-    conan build . \
+    conan build . --build-folder build \
     && mkdir bin \
-    && cp build/server bin/ \
-    && cp build/client bin/
+    && cp -R build build_out
 
 # ******************************************************************************
 
@@ -33,7 +31,8 @@ FROM ubuntu as runner
 
 WORKDIR /opt/transfer
 
-RUN apt update && DEBIAN_FRONTEND="noninteractive" apt install --no-install-recommends -y  \
-    libzmqpp4
+# Copy dependency libraries
+COPY --from=builder /opt/transfer/build_out/*/lib/* /usr/lib
 
-COPY --from=builder /opt/transfer/bin .
+# Copy our binaries
+COPY --from=builder /opt/transfer/build_out/server /usr/bin

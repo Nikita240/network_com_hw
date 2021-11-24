@@ -13,7 +13,7 @@ void Server::start(const std::string endpoint) {
 void Server::stop() {
     poison = true;
     if(serverThread->joinable())
-        serverThread->join();
+        serverThread->join(); // This segfaults sometimes?????
     delete serverThread;
 }
 
