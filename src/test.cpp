@@ -1,13 +1,24 @@
 #include "server.h"
 #include "client.h"
+#include <chrono>
 #include <thread>
 
-int main(int argc, char **argv) {
-    std::thread serverThread(server);
-    std::thread clientThread(client, "tcp://localhost:5555");
+using namespace std::chrono_literals;
 
-    serverThread.join();
-    clientThread.join();
+zmq::context_t context;
+
+int main(int argc, char **argv) {
+
+    Server server(context);
+    server.start("inproc://example");
+
+    Client client(context);
+    client.upload("inproc://example", "files/helloworld.txt");
+
+    while(1)
+    {
+        std::this_thread::sleep_for(1000ms);
+    }
 
     return 0;
 }

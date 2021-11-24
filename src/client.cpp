@@ -1,31 +1,49 @@
 #include "client.h"
 #include <zmq.hpp>
 #include <iostream>
+#include <fstream>
+#include "zhelpers.hpp"
 
-using namespace std;
+#define CHUNK_SIZE 25000
 
-void client(const string endpoint) {
-  zmq::context_t context;
-
-  zmq::socket_t socket(context, zmq::socket_type::req);
-
-  // open the connection
-  printf("Connecting to %s...\n", endpoint.c_str());
-  socket.connect(endpoint);
-  int request_nbr;
-  for (request_nbr = 0; request_nbr != 10; request_nbr++) {
-    // send a message
-    cout << "Sending Hello " << request_nbr <<"…" << endl;
-    zmq::message_t message("Hello");
-    auto result = socket.send(message, zmq::send_flags::none);
-
-    zmq::message_t returnMessage;
-    auto res = socket.recv(returnMessage, zmq::recv_flags::none);
-
-    cout << "Received World " << request_nbr << endl;
-  }
+void Client::upload(const std::string endpoint, const std::string filename) {
+    poison = false;
+    clientThread = new std::thread(&Client::run, this, endpoint, filename);
 }
 
-// int main(int argc, char *argv[]) {
-//   return client("tcp://server:5555");
-// }
+void Client::cancel() {
+    poison = true;
+    clientThread->join();
+    delete clientThread;
+}
+
+void Client::run(const std::string endpoint, const std::string filename) {
+
+    zmq::socket_t socket(context, zmq::socket_type::dealer);
+
+    socket.connect(endpoint);
+
+    // Open file.
+    std::ifstream file(filename, std::ios::binary);
+
+    // Send file name message to start transfer.
+    socket.send(zmq::str_buffer("output.txt"), zmq::send_flags::none);
+
+    while(!poison) {
+        // We wait to receive a request for a chunk.
+        zmq::message_t chunkOffsetFrame;
+        socket.recv(&chunkOffsetFrame);
+        size_t* chunkOffset = chunkOffsetFrame.data<size_t>();
+
+        // Create the chunk frame.
+        char data[CHUNK_SIZE];
+        file.seekg(*chunkOffset);
+        size_t sizeRead = file.readsome(data, CHUNK_SIZE);
+        zmq::const_buffer chunkFrame(data, sizeRead);
+
+        // Send the chunk offset back first. (In case packets arrive out of order)
+        socket.send(chunkOffsetFrame, zmq::send_flags::sndmore);
+        // Send the chunk itself.
+        socket.send(chunkFrame, zmq::send_flags::none);
+    }
+}
