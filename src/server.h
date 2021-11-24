@@ -7,9 +7,7 @@
 #include <atomic>
 #include <map>
 #include <fstream>
-
-#include <bitset>
-#include <iostream>
+#include <openssl/md5.h>
 
 // Specialization to allow us to use client ID packets as a map key.
 namespace std
@@ -47,7 +45,7 @@ private:
     struct FileTransfer {
         FileTransfer() : chunkRequested(0), bandwidthUsage(0) {};
 
-        std::string name;
+        unsigned char hash[MD5_DIGEST_LENGTH];
         std::ofstream file;
         size_t chunkRequested;
         size_t bandwidthUsage;

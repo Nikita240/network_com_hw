@@ -2,9 +2,24 @@
 #include <zmq.hpp>
 #include <iostream>
 #include <fstream>
-#include "zhelpers.hpp"
+#include <openssl/md5.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+// #include "zhelpers.hpp"
 
 #define CHUNK_SIZE 25000
+
+std::array<unsigned char, MD5_DIGEST_LENGTH> fileHash(const std::string filename, size_t fileSize) {
+    std::array<unsigned char, MD5_DIGEST_LENGTH> result;
+
+    void* fileBuffer = mmap(0, fileSize, PROT_READ, MAP_SHARED, open(filename.c_str(), O_RDONLY), 0);
+    MD5((unsigned char*) fileBuffer, fileSize, result.data());
+    munmap(fileBuffer, fileSize);
+
+    return result;
+}
 
 void Client::upload(const std::string endpoint, const std::string filename) {
     poison = false;
@@ -24,10 +39,14 @@ void Client::run(const std::string endpoint, const std::string filename) {
     socket.connect(endpoint);
 
     // Open file.
-    std::ifstream file(filename, std::ios::binary);
+    std::ifstream file(filename, std::ios::binary | std::ios::ate);
 
-    // Send file name message to start transfer.
-    socket.send(zmq::str_buffer("output.txt"), zmq::send_flags::none);
+    // Hash the file for testing data integrity.
+    std::array<unsigned char, MD5_DIGEST_LENGTH> hash = fileHash(filename, file.tellg());
+
+    // Send file hash to start transfer.
+    zmq::const_buffer hashFrame(hash.data(), MD5_DIGEST_LENGTH);
+    socket.send(hashFrame, zmq::send_flags::none);
 
     while(!poison) {
         // We wait to receive a request for a chunk.
@@ -45,5 +64,9 @@ void Client::run(const std::string endpoint, const std::string filename) {
         socket.send(chunkOffsetFrame, zmq::send_flags::sndmore);
         // Send the chunk itself.
         socket.send(chunkFrame, zmq::send_flags::none);
+
+        if(sizeRead == 0) {
+            break;
+        }
     }
 }

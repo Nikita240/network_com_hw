@@ -2,7 +2,7 @@
 #include <zmq.hpp>
 #include <iostream>
 #include <chrono>
-#include "zhelpers.hpp"
+// #include "zhelpers.hpp"
 
 #define CHUNK_SIZE 25000
 #define BANDWIDTH 10
@@ -41,16 +41,15 @@ void Server::run(const std::string endpoint) {
         // If we do not have the client ID saved, then we assume the client is
         // trying to start a new transfer.
         if(itr == activeTransfers.end()) {
-            // Filename frame should come first.
-            zmq::message_t nameFrame;
-            socket.recv(&nameFrame);
-
             activeTransfers[id] = FileTransfer();
-            activeTransfers[id].name = nameFrame.to_string();
 
-            // We will prefix the filename by the id to handle identical filenames from multiple clients.
-            std::string filename(std::string("files/") + "_" + activeTransfers[id].name);
-            activeTransfers[id].file = std::ofstream(filename, std::ios::binary);
+            // Hash frame should come first.
+            zmq::mutable_buffer hashFrame(activeTransfers[id].hash, MD5_DIGEST_LENGTH);
+            socket.recv(hashFrame, zmq::recv_flags::none);
+
+            // We will prefix the hash by the id to handle identical files from multiple clients.
+            std::string filename("files/" + std::to_string(std::hash<zmq::mutable_buffer>{}(id)) + "_" + std::string(activeTransfers[id].hash, activeTransfers[id].hash+MD5_DIGEST_LENGTH));
+            activeTransfers[id].file = std::ofstream(filename, std::ios::binary | std::ios::ate);
         }
         // If we have the client ID saved, then we have an active transfer.
         else {
@@ -62,7 +61,7 @@ void Server::run(const std::string endpoint) {
             // The actual data comes next.
             void* ptr = malloc(CHUNK_SIZE);
             zmq::mutable_buffer chunkFrame(ptr, CHUNK_SIZE);
-            auto receivedBytes = socket.recv(chunkFrame);
+            auto receivedBytes = socket.recv(chunkFrame, zmq::recv_flags::none);
 
             if (receivedBytes && receivedBytes->untruncated_size) {
                 // Write the data to file.
@@ -95,12 +94,8 @@ void Server::run(const std::string endpoint) {
                 auto itr = activeTransfers.begin();
 
                 // Send the client ID first so the message routes to the right client.
-                // zmq::const_buffer idOutFrame(&itr->first, sizeof(uint32_t));
-                // zmq::message_t idOutFrame(&itr->first, 5);
-                // std::cout << "server: " << idOutFrame.str() << " idOutFrame" << std::endl;
                 socket.send(itr->first, zmq::send_flags::sndmore);
 
-                // zmq::const_buffer chunkRequestFrame(&itr->second.chunkRequested, sizeof(size_t));
                 zmq::const_buffer chunkRequestFrame(&itr->second.chunkRequested, sizeof(size_t));
                 socket.send(chunkRequestFrame, zmq::send_flags::none);
 
