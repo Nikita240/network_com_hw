@@ -11,10 +11,10 @@ zmq::context_t context;
 int main(int argc, char **argv) {
 
     Server server(context);
-    server.start("inproc://example");
+    server.start("tcp://*:5557");
 
     Client client(context);
-    client.upload("inproc://example", "files/helloworld.txt");
+    client.upload("tcp://localhost:5557", "files/testdata");
 
     std::cout << "\r" << "Progress: " << std::to_string(client.getProgress().load()) << "%" << std::flush;
 
@@ -27,8 +27,6 @@ int main(int argc, char **argv) {
 
     std::cout << std::endl;
     std::cout << "Done" << std::endl;
-
-    server.stop();
 
     return 0;
 }

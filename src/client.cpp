@@ -41,12 +41,16 @@ void Client::run(const std::string endpoint, const std::string filename) {
 
     socket.connect(endpoint);
 
-    // Open file.
+    // Get file size.
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
+    size_t fileSize = file.tellg();
+
+    // Open file.
+    file = std::ifstream(filename, std::ios::binary);
 
     // Hash the file for testing data integrity.
-    size_t fileSize = file.tellg();
     std::array<unsigned char, MD5_DIGEST_LENGTH> hash = fileHash(filename, fileSize);
+    // std::array<unsigned char, MD5_DIGEST_LENGTH> hash;
 
     // Send file hash to start transfer.
     zmq::const_buffer hashFrame(hash.data(), MD5_DIGEST_LENGTH);

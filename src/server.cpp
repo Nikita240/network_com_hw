@@ -2,7 +2,7 @@
 #include <zmq.hpp>
 #include <iostream>
 #include <chrono>
-// #include "zhelpers.hpp"
+#include "zhelpers.hpp"
 
 #define CHUNK_SIZE 25000
 #define BANDWIDTH 10
@@ -22,8 +22,8 @@ void Server::stop() {
 void Server::run(const std::string endpoint) {
 
     zmq::socket_t socket(context, zmq::socket_type::router);
-    socket.set(zmq::sockopt::rcvhwm, BANDWIDTH*2);
-    socket.set(zmq::sockopt::sndhwm, BANDWIDTH*2);
+    // Chunks are sent in 3 frames, so our hvm is x3 + some margin for new transfer requests.
+    socket.set(zmq::sockopt::rcvhwm, BANDWIDTH*3 + 2*10);
 
     socket.bind(endpoint);
 
@@ -31,7 +31,6 @@ void Server::run(const std::string endpoint) {
     size_t bandwidthCredits = BANDWIDTH;
 
     while(!poison) {
-
         // First frame is client ID.
         void* ptr = malloc(5); // ID's are 5 bytes by default.
         zmq::mutable_buffer id(ptr, 5);
@@ -50,7 +49,7 @@ void Server::run(const std::string endpoint) {
 
             // We will prefix the hash by the id to handle identical files from multiple clients.
             std::string filename("files/" + std::to_string(std::hash<zmq::mutable_buffer>{}(id)) + "_" + std::string(activeTransfers[id].hash, activeTransfers[id].hash+MD5_DIGEST_LENGTH));
-            activeTransfers[id].file = std::ofstream(filename, std::ios::binary | std::ios::ate);
+            activeTransfers[id].file = std::ofstream(filename, std::ios::binary);
         }
         // If we have the client ID saved, then we have an active transfer.
         else {
