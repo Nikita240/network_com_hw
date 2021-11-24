@@ -1,5 +1,5 @@
 #include "server.h"
-#include <zmqpp/zmqpp.hpp>
+#include <zmq.hpp>
 #include <string>
 #include <iostream>
 #include <chrono>
@@ -10,27 +10,25 @@ using namespace std;
 void server() {
   const string endpoint = "tcp://*:5555";
 
-  // initialize the 0MQ context
-  zmqpp::context context;
+  zmq::context_t context;
 
-  // generate a pull socket
-  zmqpp::socket_type type = zmqpp::socket_type::reply;
-  zmqpp::socket socket (context, type);
+  zmq::socket_t socket(context, zmq::socket_type::rep);
+
+  zmq::message_t replyMessage("World");
 
   // bind to the socket
   socket.bind(endpoint);
   while (1) {
     // receive the message
-    zmqpp::message message;
+    zmq::message_t message;
     // decompose the message
-    socket.receive(message);
-    string text;
-    message >> text;
+    socket.recv(message, zmq::recv_flags::none);
+    string text = message.data<char>();
 
     //Do some 'work'
     std::this_thread::sleep_for(std::chrono::seconds(1));
     cout << "Received Hello" << endl;
-    socket.send("World");
+    socket.send(replyMessage, zmq::send_flags::none);
   }
 }
 

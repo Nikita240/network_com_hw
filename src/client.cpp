@@ -1,16 +1,13 @@
 #include "client.h"
-#include <zmqpp/zmqpp.hpp>
+#include <zmq.hpp>
 #include <iostream>
 
 using namespace std;
 
 void client(const string endpoint) {
-  // initialize the 0MQ context
-  zmqpp::context context;
+  zmq::context_t context;
 
-  // generate a push socket
-  zmqpp::socket_type type = zmqpp::socket_type::req;
-  zmqpp::socket socket (context, type);
+  zmq::socket_t socket(context, zmq::socket_type::req);
 
   // open the connection
   printf("Connecting to %s...\n", endpoint.c_str());
@@ -19,12 +16,11 @@ void client(const string endpoint) {
   for (request_nbr = 0; request_nbr != 10; request_nbr++) {
     // send a message
     cout << "Sending Hello " << request_nbr <<"…" << endl;
-    zmqpp::message message;
-    // compose a message from a string and a number
-    message << "Hello";
-    socket.send(message);
-    string buffer;
-    socket.receive(buffer);
+    zmq::message_t message("Hello");
+    auto result = socket.send(message, zmq::send_flags::none);
+
+    zmq::message_t returnMessage;
+    auto res = socket.recv(returnMessage, zmq::recv_flags::none);
 
     cout << "Received World " << request_nbr << endl;
   }

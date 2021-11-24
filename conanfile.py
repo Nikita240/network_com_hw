@@ -3,7 +3,7 @@ import os
 
 class ConanFileToolsTest(ConanFile):
     generators = "pkg_config"
-    requires = "zmqpp/4.2.0"
+    requires = "cppzmq/4.8.1"
     settings = "os", "compiler", "build_type"
 
     def build(self):
