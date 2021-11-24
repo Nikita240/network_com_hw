@@ -1,0 +1,21 @@
+version: '3.6'
+
+services:
+  server:
+    image: server
+    build:
+      context: .
+    command: ./server
+
+  client:
+    image: client
+    build:
+      context: .
+    depends_on:
+      - "server"
+    # Pass stdin through to the executable.
+    stdin_open: true
+    tty: true
+    # Make tini be PID 1 to force Ctrl-C to kill underlying proccess.
+    init: true
+    command: ./client

@@ -11,18 +11,29 @@ RUN apt update && DEBIAN_FRONTEND="noninteractive" apt install --no-install-reco
     python3-setuptools \
     python3-wheel \
     ninja-build \
+    pkg-config \
+    cmake \
     libzmqpp-dev
 
-RUN pip3 install meson
+RUN pip3 install meson conan
 
 COPY . .
 
-RUN --mount=type=cache,target=builddir meson setup builddir --backend ninja
+RUN conan install .
 
-RUN --mount=type=cache,target=builddir \
-    meson compile -C builddir \
-    && cp builddir/sender .
+RUN --mount=type=cache,target=build \
+    conan build . \
+    && mkdir bin \
+    && cp build/server bin/ \
+    && cp build/client bin/
 
-CMD ./sender
+# ******************************************************************************
 
-# RUN meson test -C builddir
+FROM ubuntu as runner
+
+WORKDIR /opt/transfer
+
+RUN apt update && DEBIAN_FRONTEND="noninteractive" apt install --no-install-recommends -y  \
+    libzmqpp4
+
+COPY --from=builder /opt/transfer/bin .
