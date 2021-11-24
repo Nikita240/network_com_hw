@@ -1,4 +1,4 @@
-#include "client.h"
+#include "Client.h"
 #include <zmq.hpp>
 #include <iostream>
 #include <fstream>
@@ -8,9 +8,8 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <algorithm>
+#include "data.h"
 // #include "zhelpers.hpp"
-
-#define CHUNK_SIZE 25000
 
 std::array<unsigned char, MD5_DIGEST_LENGTH> fileHash(const std::string filename, size_t fileSize) {
     std::array<unsigned char, MD5_DIGEST_LENGTH> result;

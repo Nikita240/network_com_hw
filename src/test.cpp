@@ -1,5 +1,5 @@
-#include "server.h"
-#include "client.h"
+#include "Server.h"
+#include "Client.h"
 #include <chrono>
 #include <thread>
 #include <iostream>

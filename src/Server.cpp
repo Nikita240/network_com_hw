@@ -1,11 +1,9 @@
-#include "server.h"
+#include "Server.h"
 #include <zmq.hpp>
 #include <iostream>
 #include <chrono>
+#include "data.h"
 // #include "zhelpers.hpp"
-
-#define CHUNK_SIZE 25000
-#define BANDWIDTH 10
 
 void Server::start(const std::string endpoint) {
     poison = false;
