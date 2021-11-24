@@ -1,13 +1,10 @@
-//  Hello World client
+#include "client.h"
 #include <zmqpp/zmqpp.hpp>
-#include <string>
 #include <iostream>
 
 using namespace std;
 
-int main(int argc, char *argv[]) {
-  const string endpoint = "tcp://server:5555";
-
+void client(const string endpoint) {
   // initialize the 0MQ context
   zmqpp::context context;
 
@@ -16,7 +13,7 @@ int main(int argc, char *argv[]) {
   zmqpp::socket socket (context, type);
 
   // open the connection
-  cout << "Connecting to hello world server…" << endl;
+  printf("Connecting to %s...\n", endpoint.c_str());
   socket.connect(endpoint);
   int request_nbr;
   for (request_nbr = 0; request_nbr != 10; request_nbr++) {
@@ -32,3 +29,7 @@ int main(int argc, char *argv[]) {
     cout << "Received World " << request_nbr << endl;
   }
 }
+
+// int main(int argc, char *argv[]) {
+//   return client("tcp://server:5555");
+// }

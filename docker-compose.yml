@@ -13,6 +13,8 @@ services:
       context: .
     depends_on:
       - "server"
+    volumes:
+      - files:/opt/transfer/files
     # Pass stdin through to the executable.
     stdin_open: true
     tty: true

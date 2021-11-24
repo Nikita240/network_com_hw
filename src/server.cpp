@@ -1,5 +1,4 @@
-//  Hello World server
-
+#include "server.h"
 #include <zmqpp/zmqpp.hpp>
 #include <string>
 #include <iostream>
@@ -8,7 +7,7 @@
 
 using namespace std;
 
-int main(int argc, char *argv[]) {
+void server() {
   const string endpoint = "tcp://*:5555";
 
   // initialize the 0MQ context
@@ -33,5 +32,8 @@ int main(int argc, char *argv[]) {
     cout << "Received Hello" << endl;
     socket.send("World");
   }
-
 }
+
+// int main(int argc, char *argv[]) {
+//     return server();
+// }

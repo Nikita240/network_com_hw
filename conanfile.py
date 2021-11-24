@@ -8,5 +8,5 @@ class ConanFileToolsTest(ConanFile):
 
     def build(self):
         meson = Meson(self)
-        meson.configure(build_folder="build")
+        meson.configure(build_folder="build", source_folder="src")
         meson.build()

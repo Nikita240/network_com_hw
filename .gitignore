@@ -4,3 +4,8 @@
 build
 builddir
 files/testdata
+*.pc
+graph_info.json
+conanbuildinfo.txt
+conaninfo.txt
+conan.lock
