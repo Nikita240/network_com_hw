@@ -2,7 +2,7 @@
 #include <zmq.hpp>
 #include <iostream>
 #include <chrono>
-#include "zhelpers.hpp"
+// #include "zhelpers.hpp"
 
 #define CHUNK_SIZE 25000
 #define BANDWIDTH 10
@@ -34,7 +34,11 @@ void Server::run(const std::string endpoint) {
         // First frame is client ID.
         void* ptr = malloc(5); // ID's are 5 bytes by default.
         zmq::mutable_buffer id(ptr, 5);
-        socket.recv(id);
+        auto result = socket.recv(id, zmq::recv_flags::dontwait);
+
+        // Don't block the loop in case client tries to exit.
+        if(!result)
+            continue;
 
         auto itr = activeTransfers.find(id);
 
