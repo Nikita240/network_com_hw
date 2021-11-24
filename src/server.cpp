@@ -14,7 +14,8 @@ void Server::start(const std::string endpoint) {
 
 void Server::stop() {
     poison = true;
-    serverThread->join();
+    if(serverThread->joinable())
+        serverThread->join();
     delete serverThread;
 }
 
@@ -88,23 +89,21 @@ void Server::run(const std::string endpoint) {
         }
 
         // Spend our bandwidth credits by requesting chunks.
-        while(bandwidthCredits) {
-            if (activeTransfers.size()) {
-                // @todo this could be changed to round robin between different clients.
-                auto itr = activeTransfers.begin();
+        while(bandwidthCredits && activeTransfers.size()) {
+            // @todo this could be changed to round robin between different clients.
+            auto itr = activeTransfers.begin();
 
-                // Send the client ID first so the message routes to the right client.
-                socket.send(itr->first, zmq::send_flags::sndmore);
+            // Send the client ID first so the message routes to the right client.
+            socket.send(itr->first, zmq::send_flags::sndmore);
 
-                zmq::const_buffer chunkRequestFrame(&itr->second.chunkRequested, sizeof(size_t));
-                socket.send(chunkRequestFrame, zmq::send_flags::none);
+            zmq::const_buffer chunkRequestFrame(&itr->second.chunkRequested, sizeof(size_t));
+            socket.send(chunkRequestFrame, zmq::send_flags::none);
 
-                // Increment the data pointer we want by our PREDEFINED chunk size.
-                itr->second.chunkRequested += CHUNK_SIZE;
+            // Increment the data pointer we want by our PREDEFINED chunk size.
+            itr->second.chunkRequested += CHUNK_SIZE;
 
-                --bandwidthCredits;
-                ++itr->second.bandwidthUsage;
-            }
+            --bandwidthCredits;
+            ++itr->second.bandwidthUsage;
         }
     }
 }

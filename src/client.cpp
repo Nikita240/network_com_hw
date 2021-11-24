@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <algorithm>
 // #include "zhelpers.hpp"
 
 #define CHUNK_SIZE 25000
@@ -23,12 +24,14 @@ std::array<unsigned char, MD5_DIGEST_LENGTH> fileHash(const std::string filename
 
 void Client::upload(const std::string endpoint, const std::string filename) {
     poison = false;
+    progress = 0;
     clientThread = new std::thread(&Client::run, this, endpoint, filename);
 }
 
 void Client::cancel() {
     poison = true;
-    clientThread->join();
+    if(clientThread->joinable())
+        clientThread->join();
     delete clientThread;
 }
 
@@ -42,7 +45,8 @@ void Client::run(const std::string endpoint, const std::string filename) {
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
 
     // Hash the file for testing data integrity.
-    std::array<unsigned char, MD5_DIGEST_LENGTH> hash = fileHash(filename, file.tellg());
+    size_t fileSize = file.tellg();
+    std::array<unsigned char, MD5_DIGEST_LENGTH> hash = fileHash(filename, fileSize);
 
     // Send file hash to start transfer.
     zmq::const_buffer hashFrame(hash.data(), MD5_DIGEST_LENGTH);
@@ -64,6 +68,8 @@ void Client::run(const std::string endpoint, const std::string filename) {
         socket.send(chunkOffsetFrame, zmq::send_flags::sndmore);
         // Send the chunk itself.
         socket.send(chunkFrame, zmq::send_flags::none);
+
+        progress = std::min(*chunkOffset, fileSize) * 100 / fileSize;
 
         if(sizeRead == 0) {
             break;

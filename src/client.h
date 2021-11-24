@@ -15,6 +15,8 @@ public:
     void upload(const std::string endpoint, const std::string filename);
     void cancel();
 
+    std::atomic<unsigned int>& getProgress() { return progress; };
+
 private:
 
     void run(const std::string endpoint, const std::string filename);
@@ -22,6 +24,8 @@ private:
     zmq::context_t& context;
     std::thread* clientThread;
     std::atomic<bool> poison;
+
+    std::atomic<unsigned int> progress;
 };
 
 #endif /* D989034F_E0EE_43F5_A05B_72BC3A9288BA */
