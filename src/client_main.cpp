@@ -32,6 +32,7 @@ std::array<unsigned char, MD5_DIGEST_LENGTH> fileHash(const std::string filename
 }
 
 class MeasureTransmission {
+
 public:
     MeasureTransmission(size_t a_fileSize) : fileSize(a_fileSize) {
         // record start time

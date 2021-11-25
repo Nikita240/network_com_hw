@@ -78,8 +78,7 @@ void Server::run(const std::string endpoint) {
                 ++bandwidthCredits;
             }
             // End transfer if we start receive zero bytes.
-            else
-            {
+            else {
                 // Release all pending bandwidth credits since the client should stop sending after end of file.
                 bandwidthCredits += itr->second.bandwidthUsage;
 

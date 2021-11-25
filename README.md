@@ -47,13 +47,13 @@ If you want to really the test the performance, you will need a bigger file:
 # Create a 1 GB empty file
 dd if=/dev/urandom of=testdata bs=1M count=1024
 # Run the client with a specified endpoint and filepath
-docker-compose run --rm "tcp://server:5557" "testdata"
+docker-compose run --rm client "tcp://server:5557" "testdata"
 ```
 
 You should see an output like this:
 
 ```sh
-➜ docker-compose run --rm client client "tcp://server:5557" "files/testdata"
+➜ docker-compose run --rm client client "tcp://server:5557" "testdata"
 [+] Running 2/0
  ⠿ Container transfer-server-1  Running                                                                                                                                                                     0.0s
  ⠿ Container transfer-ftp-1     Running                                                                                                                                                                     0.0s

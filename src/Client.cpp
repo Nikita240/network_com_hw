@@ -19,7 +19,6 @@ void Client::cancel() {
 }
 
 void Client::run(const std::string endpoint, const std::string filename, size_t fileSize, const std::array<unsigned char, MD5_DIGEST_LENGTH>& hash) {
-
     zmq::socket_t socket(context, zmq::socket_type::dealer);
 
     socket.connect(endpoint);

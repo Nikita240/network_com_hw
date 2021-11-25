@@ -33,7 +33,6 @@ int main(int argc, char **argv) {
     std::cout << "\r" << "Progress: " << std::to_string(client.getProgress().load()) << "%" << std::flush;
 
     while(client.getProgress() < 100)
-    {
         std::this_thread::sleep_for(100ms);
 
         std::cout <<  "\r" <<  "Progress: " << std::to_string(client.getProgress().load()) << "%" << std::flush;

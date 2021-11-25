@@ -10,11 +10,9 @@
 #include "data.h"
 
 // Specialization to allow us to use client ID packets as a map key.
-namespace std
-{
+namespace std {
     template <>
-    struct hash<zmq::mutable_buffer>
-    {
+    struct hash<zmq::mutable_buffer> {
         std::size_t operator()(const zmq::mutable_buffer& k) const {
             // We're basically casting a 5 byte integer (stored as an array of 5 bytes) to an 8 byte size_t
             // by zeroing out bytes 6-8.
@@ -23,10 +21,8 @@ namespace std
     };
 
     template<>
-    struct less<zmq::mutable_buffer>
-    {
-       bool operator() (const zmq::mutable_buffer& lhs, const zmq::mutable_buffer& rhs) const
-       {
+    struct less<zmq::mutable_buffer> {
+       bool operator() (const zmq::mutable_buffer& lhs, const zmq::mutable_buffer& rhs) const {
            return std::hash<zmq::mutable_buffer>{}(lhs) < std::hash<zmq::mutable_buffer>{}(rhs);
        }
     };
