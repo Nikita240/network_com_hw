@@ -1,50 +1,68 @@
-# network_com_hw: Take-home programming project
-## Objective
-Build two independent inter-communicating processes (A & B) able to exchange data using two different means of data transfer/messaging services. The processes could be headless - run from a command line, or have a GUI (You will provide instructions for using them).
+# NFTP
 
-For communication use any two of several methods available, such as…
-- Network sockets
-- ZeroMQ (or equivalent for chosen programming language)
-- Netty
-- Other messaging brokers (could use a test broker hosted online)
-- Other
+This is an implementation of a custom file transfer protocol using ZeroMQ. We'll call it **Nikita's File Transfer Protocol**. It supports multiple concurrent upload clients, asynchronous packet queing, and handles out of order packets.
 
-Using one method of communication, Process A must connect with B and send contents of the provided data file cad_mesh.stl (a CAD geometry). On receiving the data, B, which has earlier established a second channel of communication with A, must return the data. A will then save the received data in a file called output.stl (cad_mesh.stl must match output.stl).
+The `client` program will upload a specified file using NFTP, then download it back using FTP. It will then compare the hashes of the sent and received file and will display performance metrics.
 
-## Requirements
-- The application/s may run on a single Windows or Linux workstation; may be connected to the web or not. Alternatively the two processes A & B could be deployed and run on two independent work stations. 
-- Developed in the candidate's choice of programming language.
-- Candidates must provide executables for functional evaluation, as well as code for review and discussion during subsequent follow-up interview discussion. The delivered package must include any necessary configuration or other files.
-- The deliverables must include documentation that could be followed to download, install and/or run the application.
-- The code must be organized and well-documented. 
-- The effort is expected to take between 2 - 8 hours based on the candidate’s experience in network application development.
+Performance is about double of FTP (albeit it doesn't offer any of the security features). My measurements show an upload speed of 8-10 Gb/s over a TCP socket, compared to 4-4.5 Gb/s for FTP.
 
-## Grading Criteria
-- We’re looking for code that is clean, readable, performant and maintainable.
-- The developer must think through the process of deploying and using the solution and provide necessary documentation.
-- The choice of messaging services used will not matter as long as the final code performs as expected. 
+## Prerequisites
 
-## Optional Simpler Scope (to reduce candidate's time and effort)
-- Implement one-way communication from process A to B using any single method of data transfer.
-- Process B is to save received data in a file called output.stl
+Using docker greatly simplifies the burden of getting the code running since we have a server/client model as well as multiple dependencies that have to be handled.
 
-## Optional Challenge (beyond original scope)
-- In Process B, implement a parser that reads the .stl file, extracts each vertex in the file and generates an Output.csv file containing the vertices.
-- The Output.csv file must be formatted to contain data (x,y,z) for each vertex on an independent line. The positional data coordinate values, each a float, must have 4 significant digits following the decimal point. 
-- Return the output.csv file to process B.
-- If not familiar, the candidate is expected to independently conduct research online to understand the format of an .STL file, which is a commonly used CAD format.
+  - docker version 19.03+
+  - docker compose version 1.28+
+  - BuildKit enabled
+  - BuildKit enabled for docker-compose
 
-## Submission
-In order to submit the assignment, do the following:
+[docker installation guide](https://docs.docker.com/engine/install/ubuntu/)
 
-1. Navigate to GitHub's project import page: [https://github.com/new/import](https://github.com/new/import)
+[docker-compose installation guide](https://docs.docker.com/compose/install/)
 
-2. In the box titled "Your old repository's clone URL", paste the homework repository's link: [https://github.com/Machina-Labs/network_com_hw](https://github.com/Machina-Labs/network_com_hw)
+To enable BuildKit, add these 3 environment variables to your .bashrc or equivalent:
 
-3. In the box titled "Repository Name", add a name for your local homework (ex. `network_com_soln`)
+```bash
+export DOCKER_BUILDKIT=1 # Enable BuildKit
+export COMPOSE_DOCKER_CLI_BUILD=1 # Enable BuildKit for docker-compose
+export BUILDKIT_PROGRESS=plain # Full build output so you can see compiler build logs
+```
 
-4. Set privacy level to "Public", then click "Begin Import" button at bottom of the page.
+## Building and Running
 
-5. Develop your homework solution in the cloned repository and push it to Github when you're done. Extra points for good Git hygiene.
+To build the code:
 
-6. Send us the link to your repository.
+```sh
+docker-compose build
+```
+
+To run the client with the provided `cad_mesh.stl` file:
+
+```sh
+docker-compose run --rm client
+```
+
+If you want to really the test the performance, you will need a bigger file:
+
+```sh
+# Create a 1 GB empty file
+dd if=/dev/urandom of=testdata bs=1M count=1024
+# Run the client with a specified endpoint and filepath
+docker-compose run --rm "tcp://server:5557" "testdata"
+```
+
+You should see an output like this:
+
+```sh
+➜ docker-compose run --rm client client "tcp://server:5557" "files/testdata"
+[+] Running 2/0
+ ⠿ Container transfer-server-1  Running                                                                                                                                                                     0.0s
+ ⠿ Container transfer-ftp-1     Running                                                                                                                                                                     0.0s
+Uploading file with ZeroMQ: 100%
+Transmission speed: 9.33 Gb/s
+Done
+Downloading file with FTP:
+Transmission speed: 3.22 Gb/s
+Done
+Sent file hash:     J*�5����6#E���
+Received file hash: J*�5����6#E���
+```
