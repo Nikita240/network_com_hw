@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <string>
 #include <fstream>
+#include "ftpget.h"
 
 using namespace std::chrono_literals;
 
@@ -63,7 +64,7 @@ int main(int argc, char **argv) {
     while(client.getProgress() < 100) {
         std::this_thread::sleep_for(100ms);
 
-        std::cout <<  "\r" <<  "Progress: " << std::to_string(client.getProgress().load()) << "%" << std::flush;
+        std::cout <<  "\r" <<  "Uploading file with ZeroMQ: " << std::to_string(client.getProgress().load()) << "%" << std::flush;
 
         if(stop) {
             std::cout << std::endl << "Exiting Safely" << std::endl;
@@ -76,6 +77,28 @@ int main(int argc, char **argv) {
 
     std::cout << std::endl;
     std::cout << "Done" << std::endl;
+
+    std::cout << "Downloading file with FTP:" << std::endl;
+
+    // Download using curl and FTP.
+    const std::string returnedFilename = filename + ".returned";
+    ftpget("ftp://ftp/" + macaron::Base64::Encode(std::string(hash.begin(), hash.end())), returnedFilename);
+
+    std::cout << "Done" << std::endl;
+
+    // Check the file.
+    std::ifstream returnedFile(returnedFilename, std::ios::binary | std::ios::ate);
+    if(!returnedFile.good()) {
+        std::cout << "File could not be downloaded" << std::endl;
+
+        return 1;
+    }
+    size_t returnedFileSize = returnedFile.tellg();
+
+    // Show the hashes.
+    std::array<unsigned char, MD5_DIGEST_LENGTH> returnedHash = fileHash(returnedFilename, returnedFileSize);
+    std::cout << "Sent file hash:     " << std::string(hash.begin(), hash.end()) << std::endl;
+    std::cout << "Received file hash: " << std::string(returnedHash.begin(), returnedHash.end()) << std::endl;
 
     return 0;
 }

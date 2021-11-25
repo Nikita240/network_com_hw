@@ -18,7 +18,8 @@ RUN pip3 install meson conan
 COPY . .
 
 RUN --mount=type=cache,target=build \
-    conan install . --install-folder build -g deploy \
+    --mount=type=cache,target=/root/.conan \
+    conan install . --install-folder build --build missing -g deploy \
     && conan build . --build-folder build \
     && cp -R build build_out
 

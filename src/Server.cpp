@@ -51,8 +51,8 @@ void Server::run(const std::string endpoint) {
             zmq::mutable_buffer hashFrame(activeTransfers[id].hash, MD5_DIGEST_LENGTH);
             socket.recv(hashFrame, zmq::recv_flags::none);
 
-            // We will prefix the hash by the id to handle identical files from multiple clients.
-            std::string filename("files/" + std::to_string(std::hash<zmq::mutable_buffer>{}(id)) + "_" + std::string(activeTransfers[id].hash, activeTransfers[id].hash+MD5_DIGEST_LENGTH));
+            // We will name files by base64 encoding their hash to avoid dupes that overwrite each other.
+            std::string filename("files/" + macaron::Base64::Encode(std::string(activeTransfers[id].hash, activeTransfers[id].hash+MD5_DIGEST_LENGTH)));
             activeTransfers[id].file = std::ofstream(filename, std::ios::binary);
         }
         // If we have the client ID saved, then we have an active transfer.

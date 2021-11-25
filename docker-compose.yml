@@ -2,20 +2,38 @@ version: '3.6'
 
 services:
   server:
-    image: server
+    image: runner
     build:
       context: .
     command: server "tcp://*:5557"
+    volumes:
+      - files:/opt/transfer/files
 
   client:
-    image: client
+    image: runner
     build:
       context: .
     depends_on:
       - "server"
+      - "ftp"
     volumes:
       - ./files:/opt/transfer/files
-    # # Pass stdin through to the executable.
-    # stdin_open: true
-    # tty: true
     command: client "tcp://server:5557" files/cad_mesh.stl
+
+  ftp:
+    image: fauria/vsftpd
+
+    # network_mode: host
+    # ports:
+    #   - "21:21"
+    #   - "21100-21110:21100-21110"
+
+    volumes:
+      - files:/home/vsftpd/admin
+
+    environment:
+      FTP_USER: admin
+      FTP_PASS: password # hack me bro
+
+volumes:
+  files:
