@@ -31,6 +31,24 @@ std::array<unsigned char, MD5_DIGEST_LENGTH> fileHash(const std::string filename
     return result;
 }
 
+class MeasureTransmission {
+public:
+    MeasureTransmission(size_t a_fileSize) : fileSize(a_fileSize) {
+        // record start time
+        start = std::chrono::high_resolution_clock::now();
+    };
+    ~MeasureTransmission() {
+        std::chrono::duration<double> duration = std::chrono::high_resolution_clock::now() - start;
+        // Convert to Gigabits per second. We use to Gigabits instead of Gigabytes to make our numbers look more impressive.
+        double speed = (double)fileSize / duration.count() / 1024.0 / 1024.0 / 1024.0 * 8.0;
+        printf("Transmission speed: %.2f Gb/s\n", speed);
+    };
+
+private:
+    size_t fileSize;
+    std::chrono::time_point<std::chrono::high_resolution_clock> start;
+};
+
 int main(int argc, char **argv) {
 
     if(argc < 3) {
@@ -57,32 +75,43 @@ int main(int argc, char **argv) {
 
     // Upload file.
     Client client(context);
-    client.upload(endpoint, filename, fileSize, hash);
 
-    signal(SIGINT, inthand);
+    {
+        MeasureTransmission measurement(fileSize);
 
-    while(client.getProgress() < 100) {
-        std::this_thread::sleep_for(100ms);
+        client.upload(endpoint, filename, fileSize, hash);
 
-        std::cout <<  "\r" <<  "Uploading file with ZeroMQ: " << std::to_string(client.getProgress().load()) << "%" << std::flush;
+        signal(SIGINT, inthand);
 
-        if(stop) {
-            std::cout << std::endl << "Exiting Safely" << std::endl;
+        while(client.getProgress() < 100) {
+            std::this_thread::sleep_for(1ms);
 
-            client.cancel();
+            std::cout <<  "\r" <<  "Uploading file with ZeroMQ: " << std::to_string(client.getProgress().load()) << "%" << std::flush;
 
-            return 0;
+            if(stop) {
+                std::cout << std::endl << "Exiting Safely" << std::endl;
+
+                client.cancel();
+
+                return 0;
+            }
         }
-    }
 
-    std::cout << std::endl;
+        std::cout << std::endl;
+    }
     std::cout << "Done" << std::endl;
 
     std::cout << "Downloading file with FTP:" << std::endl;
 
     // Download using curl and FTP.
     const std::string returnedFilename = filename + ".returned";
-    ftpget("ftp://ftp/" + macaron::Base64::Encode(std::string(hash.begin(), hash.end())), returnedFilename);
+    {
+        MeasureTransmission measurement(fileSize);
+
+        if(int result = ftpget("ftp://ftp/" + macaron::Base64::Encode(std::string(hash.begin(), hash.end())), returnedFilename)) {
+            return result;
+        }
+    }
 
     std::cout << "Done" << std::endl;
 

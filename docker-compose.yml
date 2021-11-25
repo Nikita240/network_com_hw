@@ -8,6 +8,8 @@ services:
     command: server "tcp://*:5557"
     volumes:
       - files:/opt/transfer/files
+    ports:
+      - "5557:5557"
 
   client:
     image: runner

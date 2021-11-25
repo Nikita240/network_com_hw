@@ -90,5 +90,5 @@ int ftpget(const std::string address, const std::string filename)
 
   curl_global_cleanup();
 
-  return 0;
+  return res;
 }
